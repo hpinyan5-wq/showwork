@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShowWork — the AI receipt for your homework</title>
+<meta name="description" content="Paste your AI chat and your final work. ShowWork shows exactly which sentences came from the AI, which you rewrote, and which are yours, then writes an honest AI-use disclosure backed by evidence. Runs 100% in your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f0e8; --card:#fffefb; --ink:#191814; --muted:#6f6a5f; --line:#e2dccd;
+  --verb:#ffd84d; --verb-ink:#7a5a00; --edit:#ffb27a; --edit-ink:#8a3b00; --idea:#bfe0ff; --idea-ink:#1f4f80; --own:#d6f0d8; --own-ink:#20612a;
+  --accent:#191814; --radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI","PingFang TC","Microsoft JhengHei",sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:26px 22px 70px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;margin-bottom:24px}
+.logo{display:flex;align-items:baseline;gap:12px}
+.logo h1{font:400 52px/0.95 "Instrument Serif",Georgia,serif;margin:0;letter-spacing:-.01em}
+.logo h1 em{font-style:italic}
+.tag{font:600 11px "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.08em;background:var(--ink);color:#fff;padding:5px 8px;border-radius:5px}
+.lede{margin:8px 0 0;color:var(--muted);max-width:640px;font-size:16px}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font:600 11px "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.06em;border:1.5px solid var(--ink);border-radius:99px;padding:6px 10px;background:var(--card)}
+.inputs{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:860px){.inputs{grid-template-columns:1fr}}
+.box{background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);padding:16px;display:flex;flex-direction:column}
+.box h2{display:flex;align-items:center;gap:8px;margin:0 0 4px;font:600 15px Inter}
+.box h2 .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font:700 12px Inter}
+.box p.hint{margin:0 0 10px;color:var(--muted);font-size:13px}
+textarea{width:100%;min-height:260px;resize:vertical;border:1.5px solid var(--line);border-radius:10px;padding:12px;font:14px/1.6 Inter,system-ui,"PingFang TC",sans-serif;background:#fff;color:var(--ink);flex:1}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--ink);outline-offset:1px}
+.meta{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:16px 0 0}
+.meta label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.meta input,.meta select{font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;color:var(--ink)}
+.meta input[type=number]{width:80px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+button{font:600 14px/1 Inter,sans-serif;border-radius:10px;padding:12px 16px;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer}
+button:hover{background:#efebe1}
+button.go{background:var(--ink);color:#fff;font-size:15px;padding:14px 22px}
+button.go:hover{background:#000}
+button.sm{padding:8px 11px;font-size:13px}
+.detect{font-size:12px;color:var(--muted);margin-top:8px;min-height:18px}
+#results{margin-top:30px}
+.res{display:grid;grid-template-columns:1fr 360px;gap:22px;align-items:start}
+@media(max-width:980px){.res{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);padding:20px}
+.panel h3{font:600 12px "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 14px}
+.meter{display:flex;height:16px;border-radius:99px;overflow:hidden;border:1.5px solid var(--ink);margin:6px 0 12px}
+.meter div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px}
+.legend span{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.legend span.off{opacity:.35}
+.legend i{width:13px;height:13px;border-radius:3px;border:1px solid rgba(0,0,0,.15);display:block}
+.big{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.big b{font:400 64px/1 "Instrument Serif",Georgia,serif}
+.big span{color:var(--muted)}
+.status{display:inline-flex;align-items:center;gap:6px;font:600 13px Inter;border-radius:99px;padding:6px 12px;margin-top:6px}
+.status.ok{background:var(--own);color:var(--own-ink)} .status.over{background:#ffd6d1;color:#8a1d10}
+.doc{font:16px/1.85 Georgia,"Times New Roman","PingFang TC",serif;margin-top:18px}
+.doc p{margin:0 0 1em}
+.s{border-radius:3px;cursor:pointer;transition:outline .1s;padding:1px 0}
+.s:hover{outline:2px solid var(--ink)}
+.s.sel{outline:2.5px solid var(--ink)}
+.s.verbatim{background:var(--verb)} .s.edited{background:var(--edit)} .s.idea{background:var(--idea)} .s.original{background:transparent}
+.hide-verbatim .s.verbatim,.hide-edited .s.edited,.hide-idea .s.idea{background:transparent}
+.s u{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.trace{margin-top:14px;border-top:1.5px dashed var(--line);padding-top:14px;font-size:14px}
+.trace .lab{font:600 11px "JetBrains Mono",monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:10px 0 4px}
+.trace .q{background:#faf8f2;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-family:Georgia,"PingFang TC",serif}
+.trace mark{background:var(--verb);padding:0 1px;border-radius:2px}
+.trace .why{font-size:13px;color:var(--muted);margin-top:8px}
+.receipt{background:#fff;border:0;border-radius:4px;padding:22px 20px 26px;font:13px/1.55 "JetBrains Mono",monospace;box-shadow:0 1px 0 var(--line),0 12px 30px rgba(0,0,0,.08);position:relative}
+.receipt:after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:10px;background:linear-gradient(-45deg,transparent 7px,#fff 0) 0 0/14px 10px,linear-gradient(45deg,transparent 7px,#fff 0) 0 0/14px 10px;background-repeat:repeat-x}
+.receipt .c{text-align:center}
+.receipt .h{font:400 30px/1 "Instrument Serif",serif;text-align:center;margin-bottom:4px}
+.receipt hr{border:0;border-top:1.5px dashed #bbb;margin:12px 0}
+.receipt .r{display:flex;justify-content:space-between;gap:8px}
+.receipt .r span:first-child{flex:1;overflow:hidden;white-space:nowrap}
+.receipt .r span:first-child:after{content:" ...................................................";color:#bbb}
+.receipt .r.plain span:first-child:after{content:none}
+.receipt .tot{font-weight:600;font-size:15px}
+.barcode{height:44px;margin:14px auto 4px;display:flex;justify-content:center;gap:1px}
+.barcode i{display:block;background:#111;height:100%}
+.stmt{font:14px/1.6 Georgia,"PingFang TC",serif;background:#faf8f2;border:1px solid var(--line);border-radius:10px;padding:14px;white-space:pre-wrap}
+.uses{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.uses label{font-size:13px;display:flex;align-items:center;gap:5px;border:1.5px solid var(--line);border-radius:99px;padding:5px 10px;cursor:pointer;background:#fff}
+.uses input{margin:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.howit{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:34px}
+@media(max-width:760px){.howit{grid-template-columns:1fr}}
+.howit div{border-top:2px solid var(--ink);padding-top:10px;font-size:14px;color:var(--muted)}
+.howit b{display:block;color:var(--ink);font:400 24px/1.1 "Instrument Serif",serif;margin-bottom:4px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:10px;font-size:14px;transition:transform .25s,opacity .25s;z-index:20;opacity:0}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+footer{margin-top:44px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+@media print{
+  body{background:#fff}.noprint{display:none!important}
+  .res{grid-template-columns:1fr}.panel{border:0;padding:0}
+  .receipt{box-shadow:none;border:1px solid #ccc;max-width:420px;margin:0 auto 20px}
+  .s{outline:none!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top noprint">
+    <div>
+      <div class="logo"><h1>Show<em>Work</em></h1><span class="tag">AI receipt</span></div>
+      <p class="lede">Used AI on an assignment? Prove exactly how. Paste your AI chat and your final work, and ShowWork marks every sentence as <b>copied</b>, <b>edited</b>, <b>AI-inspired</b> or <b>yours</b>, then writes an honest disclosure you can hand in.</p>
+    </div>
+    <div class="pills"><span class="pill">No sign-up</span><span class="pill">Nothing uploaded</span><span class="pill">English + 中文</span></div>
+  </div>
+
+  <div class="inputs noprint">
+    <div class="box">
+      <h2><span class="n">1</span> Your AI chat</h2>
+      <p class="hint">Copy the whole conversation from ChatGPT, Claude, Gemini or any other AI tool. Prompts are detected automatically if the chat has labels like "You said:".</p>
+      <textarea id="chat" spellcheck="false" placeholder="You said: Can you explain opportunity cost?&#10;ChatGPT said: Opportunity cost is the value of the next best alternative…"></textarea>
+      <div class="detect" id="detect"></div>
+    </div>
+    <div class="box">
+      <h2><span class="n">2</span> Your final work</h2>
+      <p class="hint">The essay, report or answer you're about to submit.</p>
+      <textarea id="final" placeholder="Paste your essay here…"></textarea>
+      <div class="detect" id="wc"></div>
+    </div>
+  </div>
+  <div class="meta noprint">
+    <label>AI tool <select id="tool"><option>ChatGPT</option><option>Claude</option><option>Gemini</option><option>Microsoft Copilot</option><option>DeepSeek</option><option>Perplexity</option><option>Other AI assistant</option></select></label>
+    <label>Assignment <input id="assign" placeholder="e.g. Econ essay 2"></label>
+    <label>Your name <input id="who" placeholder="optional"></label>
+    <label>Teacher allows AI wording up to <span style="display:flex;align-items:center;gap:6px"><input id="limit" type="number" min="0" max="100" value="20"> %</span></label>
+  </div>
+  <div class="actions noprint">
+    <button class="go" id="go">Generate my AI receipt →</button>
+    <button id="sample">Try the example</button>
+    <button id="clear">Clear</button>
+  </div>
+
+  <div id="results"></div>
+
+  <div class="howit noprint">
+    <div><b>Not a detector</b>AI detectors guess from writing style and often get it wrong. ShowWork compares your work with your actual chat, so every result can be traced back to its source.</div>
+    <div><b>Sentence-level proof</b>Click any highlighted sentence to see the exact AI line it came from and which words match.</div>
+    <div><b>Private by design</b>Everything runs in this tab. Your chat and essay are never sent anywhere, so it's safe for unsubmitted work.</div>
+  </div>
+  <footer class="noprint"><span>ShowWork · open source (MIT) · built for students who use AI honestly</span><span>v1.0</span></footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('show'),2300); }
+
+const STOP = new Set('a an the and or but if then than so of to in on at by for with from as is are was were be been being it its this that these those there their they them he she his her we our you your i me my not no do does did done can could will would should may might must have has had having into about over under also just very more most such which who whom whose what when where why how all any each both few other some own same too only out up down off again further once here because while during before after above below between through until against per via etc'.split(' '));
+const CJK = /[㐀-䶿一-鿿豈-﫿]/;
+const TOK = /[㐀-䶿一-鿿豈-﫿]|[A-Za-z0-9]+(?:['’][A-Za-z]+)?/g;
+const CATS = {
+  verbatim:{label:'Copied from AI', color:'var(--verb)'},
+  edited:{label:'AI wording, edited', color:'var(--edit)'},
+  idea:{label:'AI ideas, your words', color:'var(--idea)'},
+  original:{label:'Your own writing', color:'var(--own)'}
+};
+
+/* ---------- text utils ---------- */
+function stem(w){
+  if (w.length<=3 || CJK.test(w)) return w;
+  return w.replace(/(ies)$/,'y').replace(/(ing|ed|es|ly|ment|s)$/,'') || w;
+}
+function tokens(str){
+  const out=[]; let m; TOK.lastIndex=0;
+  while((m=TOK.exec(str))) out.push({w:m[0].toLowerCase().replace(/’/g,"'"), i:m.index, len:m[0].length});
+  return out;
+}
+function sentences(text){
+  // split into paragraphs, then sentences; keep positions for rendering
+  const paras = text.replace(/\r/g,'').split(/\n\s*\n|\n(?=\s*[-•*\d]+[.)]?\s)/).map(p=>p.trim()).filter(Boolean);
+  return paras.map(p => {
+    const parts = p.match(/[^.!?。！？\n]+(?:[.!?。！？]+["”’)\]]*|\n|$)/g) || [p];
+    return parts.map(s=>s.replace(/\n/g,' ').trim()).filter(Boolean);
+  });
+}
+function units(toks){
+  // content units for idea-overlap: stemmed non-stopwords; CJK char bigrams
+  const u = new Set(); let prev=null;
+  toks.forEach(t => {
+    if (CJK.test(t.w)) { if (prev && CJK.test(prev)) u.add(prev+t.w); prev=t.w; }
+    else { prev=null; if (!STOP.has(t.w) && t.w.length>2 && !/^\d+$/.test(t.w)) u.add(stem(t.w)); }
+  });
+  return u;
+}
+
+/* ---------- transcript parsing ---------- */
+const USER_RE = /^\s*(?:#+\s*)?(you said|you|user|me|human|prompt|question|q|i asked|我|使用者|問)\s*[:：]\s*/i;
+const AI_RE = /^\s*(?:#+\s*)?(chatgpt said|chatgpt|gpt[-\s]?[\w.]*|assistant|ai|claude said|claude|gemini said|gemini|copilot said|copilot|deepseek|perplexity|bot|answer|a|model|response|回答|助理)\s*[:：]\s*/i;
+function parseChat(raw){
+  const lines = raw.replace(/\r/g,'').split('\n');
+  const turns=[]; let cur=null, labelled=false;
+  lines.forEach(line => {
+    let m;
+    if ((m = line.match(USER_RE)) && line.length < 400 ){ labelled=true; cur={role:'user', text:line.slice(m[0].length)}; turns.push(cur); }
+    else if ((m = line.match(AI_RE))){ labelled=true; cur={role:'ai', text:line.slice(m[0].length)}; turns.push(cur); }
+    else if (cur) cur.text += '\n'+line;
+    else { cur={role:'ai', text:line}; turns.push(cur); }
+  });
+  turns.forEach(t=>t.text=t.text.trim());
+  const ai = turns.filter(t=>t.role==='ai' && t.text);
+  const prompts = turns.filter(t=>t.role==='user' && t.text).map(t=>t.text);
+  return {labelled, aiText: ai.map(t=>t.text).join('\n\n'), prompts, aiTurns: ai.length};
+}
+
+/* ---------- core analysis ---------- */
+function analyse(chatRaw, finalRaw){
+  const chat = parseChat(chatRaw);
+  const aiSents = sentences(chat.aiText).flat().map(s => { const t=tokens(s); return {text:s, toks:t, u:units(t)}; }).filter(s=>s.toks.length);
+  const allTok = (chat.aiText+finalRaw).match(TOK)||[];
+  const cjkRatio = allTok.filter(w=>CJK.test(w)).length / Math.max(1,allTok.length);
+  const N = cjkRatio > .4 ? 6 : 5;
+  // n-gram index
+  const grams = new Map();
+  aiSents.forEach((s,si) => { const w=s.toks.map(t=>t.w); for(let i=0;i+N<=w.length;i++){ const k=w.slice(i,i+N).join(' '); if(!grams.has(k)) grams.set(k,si); } });
+  const aiJoined = ' '+aiSents.map(s=>s.toks.map(t=>t.w).join(' ')).join(' | ')+' ';
+  // AI sentence windows (single + consecutive pairs) for idea matching
+  const windows = aiSents.map((s,i)=>({idx:[i], u:s.u}));
+  for (let i=0;i+1<aiSents.length;i++) windows.push({idx:[i,i+1], u:new Set([...aiSents[i].u,...aiSents[i+1].u])});
+
+  const paras = sentences(finalRaw).map(p => p.map(text => {
+    const toks = tokens(text), w = toks.map(t=>t.w), covered = new Array(w.length).fill(false), srcVotes = {};
+    for (let i=0;i+N<=w.length;i++){ const k=w.slice(i,i+N).join(' '); if (grams.has(k)){ for(let j=i;j<i+N;j++) covered[j]=true; const si=grams.get(k); srcVotes[si]=(srcVotes[si]||0)+1; } }
+    if (w.length>=3 && w.length<N && aiJoined.includes(' '+w.join(' ')+' ')) covered.fill(true);
+    const cov = w.length ? covered.filter(Boolean).length / w.length : 0;
+    const u = units(toks);
+    let best = {score:0, idx:null};
+    if (u.size>=3) windows.forEach(win => { let hit=0; u.forEach(x=>{ if(win.u.has(x)) hit++; }); const sc = hit/u.size; if (sc>best.score+1e-9 || (Math.abs(sc-best.score)<1e-9 && best.idx && win.idx.length<best.idx.length)) best={score:sc, idx:win.idx}; });
+    let src = Object.keys(srcVotes).length ? [ +Object.entries(srcVotes).sort((a,b)=>b[1]-a[1])[0][0] ] : best.idx;
+    let cat = 'original';
+    if (cov >= .5) cat='verbatim';
+    else if (cov >= .15 || (best.score >= .6 && u.size>=4)) cat='edited';
+    else if (best.score >= .4 && u.size>=3) cat='idea';
+    if (cat==='original') src=null;
+    return {text, toks, covered, cov, idea:best.score, cat, src, words:w.length};
+  }));
+  const flat = paras.flat();
+  const total = flat.reduce((a,s)=>a+s.words,0);
+  const by = {verbatim:0, edited:0, idea:0, original:0};
+  flat.forEach(s => by[s.cat]+=s.words);
+  const pct = {}; Object.keys(by).forEach(k => pct[k] = total ? by[k]/total*100 : 0);
+  const aiWording = pct.verbatim + pct.edited;
+  return {chat, aiSents, paras, flat, total, by, pct, aiWording, N};
+}
+
+/* ---------- purposes from prompts ---------- */
+const PURPOSES = [
+  ['brainstorm ideas', /\b(idea|ideas|brainstorm|topics?|angles?|suggest)\b|點子|想法/i],
+  ['explain concepts', /\b(explain|what is|what are|how does|how do|why|define|meaning|understand)\b|解釋|什麼是|為什麼/i],
+  ['create an outline', /\b(outline|structure|organi[sz]e|plan)\b|大綱|架構/i],
+  ['draft text', /\b(write|draft|essay|paragraph|compose|generate|introduction|conclusion)\b|寫|幫我寫/i],
+  ['edit grammar and wording', /\b(grammar|proofread|fix|improve|polish|rephrase|reword|edit|better)\b|修改|潤飾|文法/i],
+  ['find examples or evidence', /\b(example|examples|evidence|data|statistics|sources?)\b|例子|數據/i],
+  ['summarize material', /\b(summari[sz]e|summary|tl;?dr|shorten)\b|摘要|總結/i],
+  ['translate', /\b(translate|translation|in english|in chinese)\b|翻譯/i]
+];
+function guessPurposes(prompts, A){
+  const found = new Set();
+  prompts.forEach(p => PURPOSES.forEach(([k,re]) => { if (re.test(p)) found.add(k); }));
+  if (!prompts.length){ found.add('explain concepts'); if (A.pct.verbatim+A.pct.edited>5) found.add('draft text'); }
+  if (A.pct.verbatim < 1 && A.pct.edited < 3) found.delete('draft text');
+  return found;
+}
+
+/* ---------- receipt id ---------- */
+function hash(s){ let h=0x811c9dc5; for (let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h; }
+function receiptId(a,b){ const n=x=>x.replace(/\s+/g,' ').trim(); const h1=hash(n(a)), h2=hash(n(b)+'|'+n(a)); return 'SW-'+h1.toString(16).padStart(8,'0').slice(0,4).toUpperCase()+'-'+h2.toString(16).padStart(8,'0').slice(0,4).toUpperCase(); }
+function barcode(id){ let h=hash(id), out=''; for(let i=0;i<46;i++){ h=Math.imul(h^(h>>>15),2246822507)>>>0; const w=1+(h%3); out+='<i style="width:'+w+'px;'+(h%5===0?'opacity:0;':'')+'"></i>'; } return out; }
+
+/* ---------- render ---------- */
+let LAST=null, hidden=new Set(), selected=null;
+const r1 = n => n<10 ? Math.round(n*10)/10 : Math.round(n);
+
+function run(){
+  const chat=$('chat').value, fin=$('final').value;
+  if (!chat.trim()) { $('chat').focus(); return toast('Paste your AI chat first'); }
+  if (!fin.trim()) { $('final').focus(); return toast('Paste your final work'); }
+  const A = analyse(chat, fin); LAST=A; selected=null;
+  render(A);
+  $('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function render(A){
+  const limit = +$('limit').value || 0, tool=$('tool').value, assign=$('assign').value.trim(), who=$('who').value.trim();
+  const over = A.aiWording > limit + 1e-9;
+  const id = receiptId($('chat').value, $('final').value);
+  const now = new Date();
+  const purposes = guessPurposes(A.chat.prompts, A);
+  let h = '<div class="res">';
+  // ---- left: document
+  h += '<div class="panel" id="docpanel"><h3>Your work, sentence by sentence</h3>';
+  h += '<div class="big"><b>'+r1(A.aiWording)+'%</b><span>of your words are AI wording ('+A.by.verbatim+' copied + '+A.by.edited+' edited, out of '+A.total+' words)</span></div>';
+  h += '<div class="status '+(over?'over':'ok')+'">'+(over?'▲ Over your teacher\'s '+limit+'% limit. Rewrite the yellow and orange parts in your own words.':'✓ Within your teacher\'s '+limit+'% limit')+'</div>';
+  h += '<div class="meter">'+['verbatim','edited','idea','original'].map(k=>'<div title="'+CATS[k].label+' '+r1(A.pct[k])+'%" style="width:'+A.pct[k]+'%;background:'+CATS[k].color+'"></div>').join('')+'</div>';
+  h += '<div class="legend noprint">'+['verbatim','edited','idea','original'].map(k=>'<span data-k="'+k+'" class="'+(hidden.has(k)?'off':'')+'"><i style="background:'+CATS[k].color+'"></i>'+CATS[k].label+' · '+r1(A.pct[k])+'%</span>').join('')+'</div>';
+  h += '<div class="doc'+[...hidden].map(k=>' hide-'+k).join('')+'">';
+  let si=0;
+  A.paras.forEach(p => { h+='<p>'; p.forEach(s => { h += sentHTML(s, si++)+' '; }); h+='</p>'; });
+  h += '</div><div id="trace" class="trace noprint"><span class="why">Click any highlighted sentence to see where it came from.</span></div></div>';
+  // ---- right: receipt + statement
+  h += '<div>';
+  h += '<div class="receipt" id="receipt"><div class="h">ShowWork</div><div class="c">AI USE RECEIPT</div><div class="c" style="color:#888">'+now.toLocaleDateString()+' '+now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+'</div><hr>';
+  if (who) h += row('Student', esc(who));
+  if (assign) h += row('Assignment', esc(assign));
+  h += row('AI tool', esc(tool));
+  h += row('Prompts used', A.chat.labelled ? A.chat.prompts.length : 'n/a');
+  h += row('Words submitted', A.total);
+  h += '<hr>';
+  h += row('Copied from AI', r1(A.pct.verbatim)+'%');
+  h += row('AI wording, edited', r1(A.pct.edited)+'%');
+  h += row('AI ideas, own words', r1(A.pct.idea)+'%');
+  h += row('Own writing', r1(A.pct.original)+'%');
+  h += '<hr><div class="r plain tot"><span>AI WORDING TOTAL</span><span>'+r1(A.aiWording)+'%</span></div>';
+  h += '<div class="r plain" style="color:#888"><span>Class limit</span><span>'+limit+'% '+(over?'OVER':'OK')+'</span></div>';
+  h += '<div class="barcode">'+barcode(id)+'</div><div class="c">'+id+'</div><div class="c" style="color:#888;font-size:11px;margin-top:6px">Same chat + same essay = same ID.<br>Your teacher can re-check it at ShowWork.</div></div>';
+  h += '<div class="panel noprint" style="margin-top:26px"><h3>Your AI disclosure statement</h3><div class="uses" id="uses">'+PURPOSES.map(([k])=>'<label><input type="checkbox" value="'+k+'"'+(purposes.has(k)?' checked':'')+'>'+k+'</label>').join('')+'</div>';
+  h += '<div class="stmt" id="stmt"></div><div class="row"><button class="sm" id="copyStmt">Copy statement</button><button class="sm" id="print">Print / save receipt as PDF</button></div>';
+  h += '<div class="row" style="margin-top:12px"><label style="font-size:12px;color:var(--muted)">Citation style <select id="cite" style="font:inherit;font-size:13px;border:1.5px solid var(--line);border-radius:8px;padding:5px"><option>APA</option><option>MLA</option><option>Chicago</option></select></label></div></div>';
+  h += '</div></div>';
+  $('results').innerHTML = h;
+
+  document.querySelectorAll('.legend span').forEach(sp => sp.onclick = () => { const k=sp.dataset.k; if (k==='original') return; hidden.has(k)?hidden.delete(k):hidden.add(k); render(A); });
+  document.querySelectorAll('.s').forEach(el => el.onclick = () => showTrace(+el.dataset.i));
+  document.querySelectorAll('#uses input').forEach(c => c.onchange = updateStmt);
+  $('cite').onchange = updateStmt;
+  $('copyStmt').onclick = () => copy($('stmt').textContent, 'Disclosure copied');
+  $('print').onclick = () => window.print();
+  updateStmt();
+  if (selected!==null) showTrace(selected);
+}
+function row(a,b){ return '<div class="r"><span>'+a+'</span><span>'+b+'</span></div>'; }
+function sentHTML(s, i){
+  let html='', last=0;
+  s.toks.forEach((t,k) => {
+    html += esc(s.text.slice(last, t.i));
+    const word = esc(s.text.substr(t.i, t.len));
+    html += (s.covered[k] && s.cat!=='verbatim') ? '<u>'+word+'</u>' : word;
+    last = t.i + t.len;
+  });
+  html += esc(s.text.slice(last));
+  return '<span class="s '+s.cat+'" data-i="'+i+'" title="'+CATS[s.cat].label+'">'+html+'</span>';
+}
+function showTrace(i){
+  selected=i; const A=LAST, s=A.flat[i];
+  document.querySelectorAll('.s').forEach(el => el.classList.toggle('sel', +el.dataset.i===i));
+  const box=$('trace');
+  if (!s.src){ box.innerHTML = '<div class="lab">'+CATS.original.label+'</div><div class="q">'+esc(s.text)+'</div><div class="why">No matching wording or ideas found in your AI chat. This sentence is yours.</div>'; return; }
+  const srcText = s.src.map(k=>A.aiSents[k].text).join(' ');
+  const shared = new Set([...s.toks].filter(t=>!STOP.has(t.w)).map(t=>stem(t.w)));
+  const mark = (text, set) => { let out='', last=0; tokens(text).forEach(t => { out+=esc(text.slice(last,t.i)); const w=esc(text.substr(t.i,t.len)); out += set.has(stem(t.w)) && !STOP.has(t.w) ? '<mark>'+w+'</mark>' : w; last=t.i+t.len; }); return out+esc(text.slice(last)); };
+  const srcSet = new Set(tokens(srcText).filter(t=>!STOP.has(t.w)).map(t=>stem(t.w)));
+  const why = s.cat==='verbatim' ? Math.round(s.cov*100)+'% of this sentence matches the AI word-for-word (runs of '+A.N+'+ identical words).'
+    : s.cat==='edited' ? 'Parts of this sentence keep the AI\'s exact wording ('+Math.round(s.cov*100)+'% word-for-word, '+Math.round(s.idea*100)+'% of key terms shared). Consider rewriting it fully or quoting it.'
+    : 'Different wording, but '+Math.round(s.idea*100)+'% of the key terms come from this AI reply, so the idea is the AI\'s. That\'s usually fine if you disclose it.';
+  box.innerHTML = '<div class="lab">AI said</div><div class="q">'+mark(srcText, shared)+'</div><div class="lab">You wrote · '+CATS[s.cat].label+'</div><div class="q">'+mark(s.text, srcSet)+'</div><div class="why">'+why+'</div>';
+}
+function updateStmt(){
+  const A=LAST; if(!A) return;
+  const tool=$('tool').value, uses=[...document.querySelectorAll('#uses input:checked')].map(c=>c.value);
+  const d=new Date(), month=d.toLocaleString('en',{month:'long'}), year=d.getFullYear();
+  const list = uses.length<=1 ? (uses[0]||'support my work') : uses.slice(0,-1).join(', ')+' and '+uses[uses.length-1];
+  const id = receiptId($('chat').value, $('final').value);
+  let s = 'AI use disclosure: I used '+tool+' ('+month+' '+year+') to '+list+'. ';
+  s += 'I compared my final text against the full chat transcript sentence by sentence with ShowWork (receipt '+id+'). ';
+  s += 'Of my '+A.total+' words, '+r1(A.pct.verbatim)+'% closely match AI output, '+r1(A.pct.edited)+'% are AI wording that I edited, '+r1(A.pct.idea)+'% express AI-suggested ideas in my own words, and '+r1(A.pct.original)+'% are my own writing. ';
+  if (A.chat.labelled && A.chat.prompts.length) s += 'I wrote '+A.chat.prompts.length+' prompt'+(A.chat.prompts.length>1?'s':'')+', and the transcript is available on request. ';
+  s += 'I checked the facts and take full responsibility for the final work.';
+  const c = $('cite').value;
+  const cite = c==='APA' ? (tool.includes('ChatGPT')?'OpenAI':tool.includes('Claude')?'Anthropic':tool.includes('Gemini')?'Google':tool.includes('Copilot')?'Microsoft':tool)+'. ('+year+'). '+tool+' [Large language model].'
+    : c==='MLA' ? '"'+(A.chat.prompts[0]?A.chat.prompts[0].slice(0,80).replace(/\s+/g,' '):'Prompt')+'" prompt. '+tool+', '+d.getDate()+' '+month.slice(0,3)+'. '+year+'.'
+    : 'Text generated by '+tool+', '+month+' '+d.getDate()+', '+year+'.';
+  $('stmt').textContent = s + '\n\nReference ('+c+'): ' + cite;
+}
+function copy(str, ok){
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(str).then(()=>toast(ok), fb); else fb();
+  function fb(){ const t=document.createElement('textarea'); t.value=str; document.body.appendChild(t); t.select(); try{document.execCommand('copy'); toast(ok);}catch(e){} t.remove(); }
+}
+function detectInfo(){
+  const v=$('chat').value; if(!v.trim()){ $('detect').textContent=''; return; }
+  const c=parseChat(v);
+  $('detect').textContent = c.labelled ? '✓ Detected '+c.prompts.length+' prompt'+(c.prompts.length===1?'':'s')+' and '+c.aiTurns+' AI repl'+(c.aiTurns===1?'y':'ies')+'. Only the AI\'s words are used for matching.' : 'No "You said:" labels found, so the whole chat is treated as AI text.';
+}
+function wc(){ const n=($('final').value.match(TOK)||[]).length; $('wc').textContent = n ? n+' words' : ''; }
+
+/* ---------- example ---------- */
+const SAMPLE_CHAT = `You said:
+Can you explain opportunity cost in simple terms with an example a student would get?
+
+ChatGPT said:
+Opportunity cost is the value of the next best alternative you give up when you make a choice. Every decision has a hidden price, because time and money are limited. For example, if you spend Saturday afternoon working a shift at a bubble tea shop, the opportunity cost might be the three hours you could have spent studying for your economics exam. Opportunity cost is not always measured in money; it can be time, energy, or experiences. Economists use opportunity cost to explain why people, businesses, and governments must make trade-offs. Recognizing opportunity costs helps people make more rational decisions.
+
+You said:
+Give me ideas for how to end an essay about opportunity cost in daily life.
+
+ChatGPT said:
+You could end by connecting opportunity cost to long-term goals, such as choosing a university major. Another option is to reflect on how social media scrolling has a large opportunity cost that most students never notice. A strong conclusion might argue that understanding opportunity cost is a life skill, not just an economics concept.`;
+const SAMPLE_FINAL = `Opportunity cost is the value of the next best alternative you give up when you make a choice. I never really thought about this until last month, when I had to decide between joining a weekend tennis tournament and finishing my science fair project.
+
+I picked the tournament. We lost in the second round, and I spent Sunday night panicking over a project I could have finished calmly. The real price of the tournament was not the entry fee but the calm, well-planned project I gave up.
+
+Economists use opportunity cost to explain why everyone, from students to governments, has to make trade-offs. Time is the resource we waste most easily. Students rarely notice how many evening hours quietly disappear while scrolling social media.
+
+In the end, understanding opportunity cost is a life skill, not just a topic in an economics textbook. Before my next big decision, I want to ask one question: what am I really giving up?`;
+
+function init(){
+  $('go').onclick = run;
+  $('sample').onclick = () => { $('chat').value=SAMPLE_CHAT; $('final').value=SAMPLE_FINAL; $('assign').value='Econ reflection essay'; detectInfo(); wc(); run(); };
+  $('clear').onclick = () => { $('chat').value=''; $('final').value=''; $('results').innerHTML=''; detectInfo(); wc(); };
+  $('chat').addEventListener('input', detectInfo);
+  $('final').addEventListener('input', wc);
+  ['tool','limit','assign','who'].forEach(k => $(k).addEventListener('change', () => { if (LAST) render(LAST); }));
+  if (/(^|[?&#])demo\b/.test(location.search+location.hash)) $('sample').click();
+}
+window.ShowWork = {analyse, parseChat, sentences};
+init();
+})();
+</script>
+</body>
+</html>
