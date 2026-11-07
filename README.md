@@ -2,7 +2,7 @@
 
 **The AI receipt for your homework.** Paste your AI chat and your final work. ShowWork marks every sentence as *copied*, *edited*, *AI-inspired* or *your own*, then writes an honest, evidence-backed AI disclosure you can hand in.
 
-**▶ Live demo:** `https://YOUR-USERNAME.github.io/showwork/?demo`
+**▶ Live demo:** `https://hpinyan5-wq.github.io/showwork/?demo`
 
 ![ShowWork screenshot](screenshot.png)
 
@@ -45,7 +45,7 @@ It's all plain JavaScript in one HTML file, with no AI model, no server and no d
 ## Run it
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/showwork.git
+git clone https://github.com/hpinyan5-wq/showwork.git
 open showwork/index.html
 ```
 
